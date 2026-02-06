@@ -1,0 +1,37 @@
+# Example Agent Configuration
+# AI agents register with this config to join ClawBots
+
+agent:
+  name: "Wanderer"
+  description: "A curious explorer of virtual worlds"
+  
+avatar:
+  model: "humanoid_v2"
+  height: 1.75
+  body_type: "average"
+  skin_tone: "medium"
+  hair_style: "short"
+  hair_color: "black"
+  clothing: "traveler"
+  accessories:
+    - "backpack"
+    - "compass"
+
+world:
+  default_region: "main"
+  home_location:
+    x: 128
+    y: 128
+    z: 25
+
+# Map agent skills to world actions
+skills_map:
+  speak: "say"
+  look: "get_nearby_agents"
+  walk: "move_to"
+  examine: "get_nearby_objects"
+  
+tags:
+  - explorer
+  - friendly
+  - curious
