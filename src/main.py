@@ -15,6 +15,7 @@ from registry.auth import AuthManager
 from registry.agents import AgentRegistry
 from world.engine import WorldEngine
 from gateway.mcp_server import MCPServer
+from portal import get_portal
 
 
 # ========== APP SETUP ==========
@@ -309,24 +310,34 @@ if __name__ == "__main__":
 @app.get("/api/v1/portal/templates")
 async def get_templates():
     """Get available agent templates."""
-    from portal.config import PortalConfig
-    portal = PortalConfig()
+    portal = get_portal()
     return {
         "templates": [
             {
                 "name": name,
-                "description": portal.get_template(name).description
+                "description": portal.get_template(name).description,
+                "default_region": portal.get_template(name).default_region,
+                "tags": portal.get_template(name).tags
             }
             for name in portal.list_templates()
         ]
     }
 
 
+@app.get("/api/v1/portal/templates/{template_name}")
+async def get_template_detail(template_name: str):
+    """Get detailed template info."""
+    portal = get_portal()
+    template = portal.get_template(template_name)
+    if not template:
+        raise HTTPException(404, f"Template not found: {template_name}")
+    return {"template": template.to_dict()}
+
+
 @app.post("/api/v1/portal/create-from-template")
 async def create_from_template(template_name: str, custom_name: Optional[str] = None):
     """Create agent from template."""
-    from portal.config import PortalConfig
-    portal = PortalConfig()
+    portal = get_portal()
     
     setup = portal.create_from_template(template_name, custom_name)
     if not setup:
