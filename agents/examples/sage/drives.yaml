@@ -1,0 +1,18 @@
+# Sage's Drive Configuration
+drives:
+  social:
+    base_weight: 0.4
+    decay_rate: 0.01
+    satisfy_amount: 0.3
+  teaching:
+    base_weight: 0.7
+    decay_rate: 0.015
+    satisfy_amount: 0.4
+  curiosity:
+    base_weight: 0.5
+    decay_rate: 0.01
+    satisfy_amount: 0.25
+  rest:
+    base_weight: 0.3
+    decay_rate: 0.005
+    satisfy_amount: 0.5

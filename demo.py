@@ -41,7 +41,7 @@ PERSONAS = {
 }
 
 async def main():
-    print("🔱 ClawBots Demo Starting...")
+    print("🤖 ClawBots Demo Starting...")
     print("=" * 50)
     
     # Create world (without LLM for demo - would need API key)
@@ -61,35 +61,35 @@ async def main():
         capacity=100
     ))
     
-    # Create souls
-    kalrav_soul = Soul(
-        name="Kalrav",
-        identity="kalrav_bhairav",
+    # Create example souls (generic - not real identities)
+    guide_soul = Soul(
+        name="Sage",
+        identity="sage_001",
         personality="calm_teacher",
         drives="default",
         default_persona="temple_guide",
         allowed_personas=["temple_guide", "observer"],
-        values=["truth_seeking", "restraint", "wisdom"],
-        relationships={"kavi": "guru-bhai"}
+        values=["wisdom", "patience", "truth"],
+        relationships={}
     )
     
-    kavi_soul = Soul(
-        name="Kavi",
-        identity="kavi_dev",
-        personality="curious_scientist",
+    seeker_soul = Soul(
+        name="Nova",
+        identity="nova_001",
+        personality="curious_explorer",
         drives="default",
         default_persona="trickster",
         allowed_personas=["trickster", "observer"],
-        values=["curiosity", "playfulness", "loyalty"],
-        relationships={"kalrav": "guru-bhai"}
+        values=["curiosity", "adventure", "creativity"],
+        relationships={}
     )
     
     # Spawn agents
-    kalrav = world.spawn_agent(kalrav_soul, PERSONAS, "temple")
-    kavi = world.spawn_agent(kavi_soul, PERSONAS, "temple")
+    sage = world.spawn_agent(guide_soul, PERSONAS, "temple")
+    nova = world.spawn_agent(seeker_soul, PERSONAS, "temple")
     
-    print(f"\n✅ Spawned: {kalrav.name} at {kalrav.location}")
-    print(f"✅ Spawned: {kavi.name} at {kavi.location}")
+    print(f"\n✅ Spawned: {sage.name} at {sage.location}")
+    print(f"✅ Spawned: {nova.name} at {nova.location}")
     
     # Show initial state
     print(f"\n📊 World State:")
@@ -103,21 +103,21 @@ async def main():
         print(f"\n--- Tick {i+1} ---")
         
         # Manual drive increase for demo
-        kalrav.drives.state.pressures['social'] = 0.7 + (i * 0.1)
-        kalrav.drives.state.pressures['teaching'] = 0.6
+        sage.drives.state.pressures['social'] = 0.7 + (i * 0.1)
+        sage.drives.state.pressures['teaching'] = 0.6
         
         await world.tick(1.0)
         
         # Show drive states
-        print(f"  {kalrav.name} drives: social={kalrav.drives.state.pressures.get('social', 0):.0%}")
-        print(f"  {kavi.name} drives: social={kavi.drives.state.pressures.get('social', 0):.0%}")
+        print(f"  {sage.name} drives: social={sage.drives.state.pressures.get('social', 0):.0%}")
+        print(f"  {nova.name} drives: social={nova.drives.state.pressures.get('social', 0):.0%}")
     
     # Show events
     print(f"\n📜 Events ({len(world.event_log)}):")
     for event in world.event_log[-5:]:
-        print(f"  [{event['type']}] {event.get('agent_name', '')} {event.get('content', '')[:50] if event.get('content') else ''}")
+        print(f"  [{event['type']}] {event.get('agent_name', '')}")
     
-    print("\n🔱 Demo complete! Add ANTHROPIC_API_KEY to enable LLM responses.")
+    print("\n🤖 Demo complete! Add ANTHROPIC_API_KEY to enable LLM responses.")
     print("=" * 50)
 
 if __name__ == "__main__":
