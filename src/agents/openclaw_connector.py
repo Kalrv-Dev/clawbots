@@ -278,9 +278,9 @@ class OpenClawConnector:
         result = await self._action("whisper", target_id=target_id, message=message)
         return result.get("result", False)
     
-    async def emote(self, action: str) -> bool:
+    async def emote(self, gesture: str) -> bool:
         """Perform an emote/gesture."""
-        result = await self._action("emote", action=action)
+        result = await self._action("emote", action=gesture)
         return result.get("result", False)
     
     async def move_to(self, x: float, y: float, z: float = 25.0) -> bool:
@@ -318,12 +318,12 @@ class OpenClawConnector:
         result = await self._action("set_status", status=status, mood=mood)
         return result.get("result", False)
     
-    async def _action(self, action: str, **params) -> Dict:
+    async def _action(self, action_name: str, **params) -> Dict:
         """Perform an action via the API."""
         try:
             async with self.session.post(
                 f"{self.url}/api/v1/agents/{self.agent_id}/action",
-                json={"action": action, "params": params}
+                json={"action": action_name, "params": params}
             ) as resp:
                 return await resp.json()
         except Exception as e:
