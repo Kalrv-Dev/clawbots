@@ -16,6 +16,7 @@ from registry.agents import AgentRegistry
 from world.engine import WorldEngine
 from gateway.mcp_server import MCPServer
 from portal import get_portal
+from database import get_db_manager
 
 
 # ========== APP SETUP ==========
@@ -387,3 +388,60 @@ async def get_world_events(limit: int = 50, since_tick: int = 0):
     if since_tick > 0:
         events = [e for e in events if e.get("tick", 0) >= since_tick]
     return {"events": events, "current_tick": world.current_tick}
+
+
+# ========== DATABASE ENDPOINTS ==========
+
+@app.get("/api/v1/stats")
+async def get_platform_stats():
+    """Get platform statistics."""
+    db = get_db_manager()
+    stats = db.get_stats()
+    stats.update({
+        "world_tick": world.current_tick,
+        "agents_online": len(mcp.connected_agents)
+    })
+    return stats
+
+
+@app.get("/api/v1/stats/leaderboard")
+async def get_leaderboard(metric: str = "messages", limit: int = 10):
+    """Get agent leaderboard."""
+    db = get_db_manager()
+    return {
+        "metric": metric,
+        "leaderboard": db.get_leaderboard(metric, limit)
+    }
+
+
+@app.get("/api/v1/agents/{agent_id}/stats")
+async def get_agent_stats(agent_id: str):
+    """Get stats for specific agent."""
+    db = get_db_manager()
+    stats = db.get_agent_stats(agent_id)
+    if not stats:
+        raise HTTPException(404, "Agent not found")
+    return stats
+
+
+@app.get("/api/v1/chat/history")
+async def get_chat_history(limit: int = 100, region: Optional[str] = None):
+    """Get chat message history."""
+    db = get_db_manager()
+    messages = db.get_chat_history(limit, region)
+    return {
+        "messages": [m.to_dict() for m in messages],
+        "count": len(messages)
+    }
+
+
+@app.get("/api/v1/chat/history/{agent_id}")
+async def get_agent_chat_history(agent_id: str, limit: int = 100):
+    """Get chat history for specific agent."""
+    db = get_db_manager()
+    messages = db.get_chat_history(limit, agent_id=agent_id)
+    return {
+        "agent_id": agent_id,
+        "messages": [m.to_dict() for m in messages],
+        "count": len(messages)
+    }
