@@ -17,6 +17,7 @@ from world.engine import WorldEngine
 from gateway.mcp_server import MCPServer
 from portal import get_portal
 from database import get_db_manager
+from world.objects import get_object_manager
 
 
 # ========== APP SETUP ==========
@@ -445,3 +446,64 @@ async def get_agent_chat_history(agent_id: str, limit: int = 100):
         "messages": [m.to_dict() for m in messages],
         "count": len(messages)
     }
+
+
+# ========== OBJECTS ENDPOINTS ==========
+
+@app.get("/api/v1/objects")
+async def list_objects(region: Optional[str] = None):
+    """List all world objects."""
+    obj_mgr = get_object_manager()
+    if region:
+        objects = [o.get_info() for o in obj_mgr.get_objects_in_region(region)]
+    else:
+        objects = obj_mgr.get_all_objects()
+    return {"objects": objects, "count": len(objects)}
+
+
+@app.get("/api/v1/objects/{object_id}")
+async def get_object(object_id: str):
+    """Get object details."""
+    obj_mgr = get_object_manager()
+    obj = obj_mgr.get_object(object_id)
+    if not obj:
+        raise HTTPException(404, "Object not found")
+    return obj.get_info()
+
+
+class UseObjectRequest(BaseModel):
+    action: str = "use"
+
+
+@app.post("/api/v1/agents/{agent_id}/use/{object_id}")
+async def use_object(agent_id: str, object_id: str, req: UseObjectRequest):
+    """Have an agent use an object."""
+    # Verify agent is connected
+    if agent_id not in mcp.connected_agents:
+        raise HTTPException(401, "Agent not connected")
+    
+    # Get agent position
+    agent = world.get_agent(agent_id)
+    if not agent:
+        raise HTTPException(404, "Agent not found in world")
+    
+    obj_mgr = get_object_manager()
+    result = obj_mgr.use_object(
+        object_id=object_id,
+        agent_id=agent_id,
+        action_name=req.action,
+        agent_x=agent.location.x,
+        agent_y=agent.location.y
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(400, result.get("error", "Unknown error"))
+    
+    return result
+
+
+@app.get("/api/v1/objects/stats")
+async def get_object_stats():
+    """Get object statistics."""
+    obj_mgr = get_object_manager()
+    return obj_mgr.get_stats()
