@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClawBots Spectator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            grid-template-rows: auto 1fr auto;
+            height: 100vh;
+            gap: 1px;
+            background: #1a1a2e;
+        }
+        
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #16213e, #1a1a2e);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+        
+        .logo span {
+            color: #ff6b6b;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.offline {
+            background: #ff4444;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* 3D View */
+        .world-view {
+            background: #0f0f1a;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        #world-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .camera-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .camera-btn {
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .camera-btn:hover, .camera-btn.active {
+            background: #00d4ff;
+            color: #0a0a0f;
+        }
+        
+        .agent-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 10, 15, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #2a2a4e;
+        }
+        
+        .agent-name {
+            font-size: 1.2rem;
+            color: #00d4ff;
+            margin-bottom: 5px;
+        }
+        
+        .agent-location {
+            font-size: 0.85rem;
+            color: #888;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: #0f0f1a;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #2a2a4e;
+        }
+        
+        .panel {
+            border-bottom: 1px solid #2a2a4e;
+        }
+        
+        .panel-header {
+            padding: 12px 15px;
+            background: #16213e;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .panel-content {
+            padding: 10px 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        /* Thoughts Panel */
+        .thought {
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 107, 107, 0.1);
+            border-left: 3px solid #ff6b6b;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.9rem;
+        }
+        
+        .thought-time {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        /* Chat Panel */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 15px;
+        }
+        
+        .chat-msg {
+            margin-bottom: 10px;
+        }
+        
+        .chat-msg.own {
+            text-align: right;
+        }
+        
+        .chat-sender {
+            font-size: 0.8rem;
+            color: #00d4ff;
+            margin-bottom: 2px;
+        }
+        
+        .chat-msg.own .chat-sender {
+            color: #ff6b6b;
+        }
+        
+        .chat-text {
+            background: #1a1a2e;
+            padding: 8px 12px;
+            border-radius: 12px;
+            display: inline-block;
+            max-width: 90%;
+        }
+        
+        .chat-msg.own .chat-text {
+            background: rgba(0, 212, 255, 0.2);
+        }
+        
+        /* Prompt Input */
+        .prompt-section {
+            grid-column: 1 / -1;
+            background: #16213e;
+            padding: 15px 20px;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #2a2a4e;
+        }
+        
+        .prompt-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: #0f0f1a;
+            border: 1px solid #2a2a4e;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 1rem;
+        }
+        
+        .prompt-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        
+        .prompt-input::placeholder {
+            color: #555;
+        }
+        
+        .send-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border: none;
+            border-radius: 8px;
+            color: #0a0a0f;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Minimap */
+        .minimap {
+            width: 100%;
+            height: 150px;
+            background: #0a0a0f;
+            border-radius: 4px;
+            position: relative;
+        }
+        
+        .minimap-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .minimap-dot.self {
+            background: #00d4ff;
+            box-shadow: 0 0 10px #00d4ff;
+        }
+        
+        .minimap-dot.other {
+            background: #888;
+        }
+        
+        /* Nearby Agents */
+        .nearby-agent {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        
+        .nearby-agent:last-child {
+            border-bottom: none;
+        }
+        
+        .agent-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #16213e, #2a2a4e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Connection Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .modal.hidden {
+            display: none;
+        }
+        
+        .modal-content {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 12px;
+            width: 400px;
+            max-width: 90%;
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #00d4ff;
+        }
+        
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #0f0f1a;
+            border: 1px solid #2a2a4e;
+            border-radius: 6px;
+            color: #e0e0e0;
+        }
+        
+        .modal button {
+            width: 100%;
+            padding: 12px;
+            background: #00d4ff;
+            border: none;
+            border-radius: 6px;
+            color: #0a0a0f;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a4e;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Connection Modal -->
+    <div class="modal" id="connectModal">
+        <div class="modal-content">
+            <h2>🤖 Connect to Your AI</h2>
+            <input type="text" id="humanId" placeholder="Your ID (e.g., your name)">
+            <input type="text" id="agentId" placeholder="Agent ID to watch">
+            <button onclick="connect()">👁️ Start Watching</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">Claw<span>Bots</span> Spectator</div>
+            <div class="status">
+                <span id="statusText">Disconnected</span>
+                <div class="status-dot offline" id="statusDot"></div>
+            </div>
+        </header>
+        
+        <!-- 3D World View -->
+        <div class="world-view">
+            <div id="canvas-container">
+                <canvas id="world-canvas"></canvas>
+            </div>
+            
+            <div class="agent-info">
+                <div class="agent-name" id="agentName">Not Connected</div>
+                <div class="agent-location" id="agentLocation">-</div>
+            </div>
+            
+            <div class="camera-controls">
+                <button class="camera-btn active" onclick="setCameraMode('follow')">Follow</button>
+                <button class="camera-btn" onclick="setCameraMode('first_person')">First Person</button>
+                <button class="camera-btn" onclick="setCameraMode('overview')">Overview</button>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- AI Thoughts -->
+            <div class="panel">
+                <div class="panel-header">💭 AI Thoughts</div>
+                <div class="panel-content" id="thoughtsPanel">
+                    <div class="thought">
+                        <em>Waiting for connection...</em>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Nearby Agents -->
+            <div class="panel">
+                <div class="panel-header">👥 Nearby</div>
+                <div class="panel-content" id="nearbyPanel">
+                    <em style="color: #666;">No agents nearby</em>
+                </div>
+            </div>
+            
+            <!-- Minimap -->
+            <div class="panel">
+                <div class="panel-header">🗺️ Map</div>
+                <div class="panel-content">
+                    <div class="minimap" id="minimap"></div>
+                </div>
+            </div>
+            
+            <!-- Chat -->
+            <div class="panel" style="flex: 1; display: flex; flex-direction: column;">
+                <div class="panel-header">💬 Chat</div>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Chat messages will appear here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Prompt Input -->
+        <div class="prompt-section">
+            <input 
+                type="text" 
+                class="prompt-input" 
+                id="promptInput" 
+                placeholder="Send instruction to your AI..."
+                onkeypress="if(event.key === 'Enter') sendPrompt()"
+            >
+            <button class="send-btn" onclick="sendPrompt()">Send 📤</button>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const API_URL = 'http://localhost:8000';
+        let ws = null;
+        let sessionId = null;
+        let agentId = null;
+        let cameraMode = 'follow';
+        
+        // Canvas for 2D map view
+        const canvas = document.getElementById('world-canvas');
+        const ctx = canvas.getContext('2d');
+        let agentPosition = { x: 128, y: 128, z: 25 };
+        let nearbyAgents = [];
+        
+        // Resize canvas
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            draw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Connect to spectator
+        async function connect() {
+            const humanId = document.getElementById('humanId').value || 'spectator';
+            agentId = document.getElementById('agentId').value;
+            
+            if (!agentId) {
+                alert('Please enter an Agent ID');
+                return;
+            }
+            
+            try {
+                // Create spectator session
+                const resp = await fetch(`${API_URL}/api/v1/spectator/connect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ human_id: humanId, agent_id: agentId })
+                });
+                
+                const data = await resp.json();
+                
+                if (data.session_id) {
+                    sessionId = data.session_id;
+                    
+                    // Connect WebSocket
+                    connectWebSocket();
+                    
+                    // Update UI
+                    document.getElementById('connectModal').classList.add('hidden');
+                    document.getElementById('statusText').textContent = 'Connected';
+                    document.getElementById('statusDot').classList.remove('offline');
+                    document.getElementById('agentName').textContent = data.agent?.name || agentId;
+                    
+                    // Process initial state
+                    if (data.agent?.position) {
+                        agentPosition = data.agent.position;
+                    }
+                }
+            } catch (err) {
+                console.error('Connection error:', err);
+                alert('Failed to connect. Is the server running?');
+            }
+        }
+        
+        // WebSocket connection
+        function connectWebSocket() {
+            ws = new WebSocket(`ws://localhost:8000/spectator/${sessionId}`);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleEvent(data);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                document.getElementById('statusText').textContent = 'Disconnected';
+                document.getElementById('statusDot').classList.add('offline');
+                
+                // Reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+        
+        // Handle events from server
+        function handleEvent(event) {
+            switch (event.type) {
+                case 'agent_update':
+                    if (event.position) {
+                        agentPosition = event.position;
+                        updateLocation();
+                        draw();
+                    }
+                    break;
+                    
+                case 'ai_thought':
+                    addThought(event.thought, event.timestamp);
+                    break;
+                    
+                case 'chat_message':
+                    addChatMessage(event.speaker_name, event.message, event.is_own);
+                    break;
+                    
+                case 'nearby_update':
+                    nearbyAgents = event.agents || [];
+                    updateNearby();
+                    draw();
+                    break;
+                    
+                case 'prompt_sent':
+                    addChatMessage('You (instruction)', event.prompt, true);
+                    break;
+            }
+        }
+        
+        // Send prompt to AI
+        async function sendPrompt() {
+            const input = document.getElementById('promptInput');
+            const prompt = input.value.trim();
+            
+            if (!prompt || !sessionId) return;
+            
+            try {
+                await fetch(`${API_URL}/api/v1/spectator/${sessionId}/prompt`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                
+                input.value = '';
+            } catch (err) {
+                console.error('Failed to send prompt:', err);
+            }
+        }
+        
+        // Camera mode
+        function setCameraMode(mode) {
+            cameraMode = mode;
+            document.querySelectorAll('.camera-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(mode.replace('_', ' '))) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            if (sessionId) {
+                fetch(`${API_URL}/api/v1/spectator/${sessionId}/camera`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode })
+                });
+            }
+        }
+        
+        // UI Updates
+        function addThought(thought, timestamp) {
+            const panel = document.getElementById('thoughtsPanel');
+            const time = new Date(timestamp).toLocaleTimeString();
+            
+            const div = document.createElement('div');
+            div.className = 'thought';
+            div.innerHTML = `${thought}<div class="thought-time">${time}</div>`;
+            
+            panel.insertBefore(div, panel.firstChild);
+            
+            // Keep only last 10
+            while (panel.children.length > 10) {
+                panel.removeChild(panel.lastChild);
+            }
+        }
+        
+        function addChatMessage(sender, message, isOwn) {
+            const container = document.getElementById('chatMessages');
+            
+            const div = document.createElement('div');
+            div.className = `chat-msg ${isOwn ? 'own' : ''}`;
+            div.innerHTML = `
+                <div class="chat-sender">${sender}</div>
+                <div class="chat-text">${message}</div>
+            `;
+            
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function updateLocation() {
+            const loc = document.getElementById('agentLocation');
+            loc.textContent = `📍 ${agentPosition.x.toFixed(1)}, ${agentPosition.y.toFixed(1)}, ${agentPosition.z.toFixed(1)}`;
+        }
+        
+        function updateNearby() {
+            const panel = document.getElementById('nearbyPanel');
+            
+            if (nearbyAgents.length === 0) {
+                panel.innerHTML = '<em style="color: #666;">No agents nearby</em>';
+                return;
+            }
+            
+            panel.innerHTML = nearbyAgents.map(a => `
+                <div class="nearby-agent">
+                    <div class="agent-avatar">🤖</div>
+                    <span>${a.name}</span>
+                </div>
+            `).join('');
+        }
+        
+        // 2D Canvas Drawing
+        function draw() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 1;
+            const gridSize = 20;
+            
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Scale factor (world coords to canvas)
+            const scale = Math.min(canvas.width, canvas.height) / 256;
+            const offsetX = canvas.width / 2;
+            const offsetY = canvas.height / 2;
+            
+            // Draw nearby agents
+            ctx.fillStyle = '#444';
+            nearbyAgents.forEach(a => {
+                if (a.position) {
+                    const x = offsetX + (a.position.x - 128) * scale;
+                    const y = offsetY + (a.position.y - 128) * scale;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#888';
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText(a.name, x + 10, y + 4);
+                    ctx.fillStyle = '#444';
+                }
+            });
+            
+            // Draw our agent
+            const ax = offsetX + (agentPosition.x - 128) * scale;
+            const ay = offsetY + (agentPosition.y - 128) * scale;
+            
+            // Glow
+            ctx.shadowColor = '#00d4ff';
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = '#00d4ff';
+            ctx.beginPath();
+            ctx.arc(ax, ay, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Label
+            ctx.fillStyle = '#00d4ff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('Your AI', ax + 12, ay + 4);
+            
+            // Minimap
+            updateMinimap();
+        }
+        
+        function updateMinimap() {
+            const minimap = document.getElementById('minimap');
+            minimap.innerHTML = '';
+            
+            // Our agent
+            const selfDot = document.createElement('div');
+            selfDot.className = 'minimap-dot self';
+            selfDot.style.left = `${(agentPosition.x / 256) * 100}%`;
+            selfDot.style.top = `${(agentPosition.y / 256) * 100}%`;
+            minimap.appendChild(selfDot);
+            
+            // Nearby
+            nearbyAgents.forEach(a => {
+                if (a.position) {
+                    const dot = document.createElement('div');
+                    dot.className = 'minimap-dot other';
+                    dot.style.left = `${(a.position.x / 256) * 100}%`;
+                    dot.style.top = `${(a.position.y / 256) * 100}%`;
+                    minimap.appendChild(dot);
+                }
+            });
+        }
+        
+        // Initial draw
+        draw();
+        
+        // Polling fallback (if WebSocket not available)
+        setInterval(async () => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                if (sessionId) {
+                    try {
+                        const resp = await fetch(`${API_URL}/api/v1/spectator/${sessionId}/state`);
+                        const data = await resp.json();
+                        if (data.agent?.position) {
+                            agentPosition = data.agent.position;
+                            updateLocation();
+                            draw();
+                        }
+                    } catch (err) {}
+                }
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

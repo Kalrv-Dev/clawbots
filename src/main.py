@@ -8,6 +8,9 @@ import asyncio
 from typing import Optional
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
 from pydantic import BaseModel
 import uvicorn
 
@@ -22,6 +25,7 @@ from world.inventory import get_inventory_manager, get_item_registry
 from world.weather import get_weather_engine
 from world.npcs import get_npc_manager
 from opensim import get_opensim_config, init_opensim_bridge, get_opensim_bridge
+from spectator import get_spectator_manager, init_spectator_manager
 
 
 # ========== APP SETUP ==========
@@ -39,6 +43,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static files for web dashboard
+WEB_DIR = Path(__file__).parent.parent / "web"
+if WEB_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
 
 # ========== PLATFORM COMPONENTS ==========
 
@@ -93,6 +102,15 @@ async def root():
 async def health():
     """Health check."""
     return {"status": "ok"}
+
+
+@app.get("/dashboard")
+async def serve_dashboard():
+    """Serve the spectator dashboard."""
+    dashboard_path = WEB_DIR / "index.html"
+    if dashboard_path.exists():
+        return FileResponse(str(dashboard_path))
+    raise HTTPException(404, "Dashboard not found")
 
 
 # ========== REGISTRATION ==========
@@ -787,3 +805,177 @@ async def get_grid_info():
         return {"online": False, "error": "Not connected"}
     
     return await bridge.get_grid_status()
+
+
+# ========== SPECTATOR ENDPOINTS ==========
+
+class SpectatorConnectRequest(BaseModel):
+    human_id: str
+    agent_id: str
+
+
+@app.post("/api/v1/spectator/connect")
+async def spectator_connect(req: SpectatorConnectRequest):
+    """Connect as a spectator to watch an AI bot."""
+    spec_mgr = get_spectator_manager(world, mcp)
+    if not spec_mgr:
+        # Initialize if needed
+        spec_mgr = await init_spectator_manager(world, mcp)
+    
+    session = await spec_mgr.connect(
+        human_id=req.human_id,
+        agent_id=req.agent_id
+    )
+    
+    # Get agent info
+    agent = world.get_agent(req.agent_id)
+    agent_info = None
+    if agent:
+        agent_info = {
+            "agent_id": agent.agent_id,
+            "name": agent.name,
+            "position": {
+                "x": agent.location.x,
+                "y": agent.location.y,
+                "z": agent.location.z
+            } if hasattr(agent, 'location') else None
+        }
+    
+    return {
+        "session_id": session.session_id,
+        "agent": agent_info,
+        "connected": True
+    }
+
+
+@app.post("/api/v1/spectator/{session_id}/disconnect")
+async def spectator_disconnect(session_id: str):
+    """Disconnect spectator session."""
+    spec_mgr = get_spectator_manager()
+    if not spec_mgr:
+        raise HTTPException(400, "Spectator manager not initialized")
+    
+    success = await spec_mgr.disconnect(session_id)
+    return {"success": success}
+
+
+@app.get("/api/v1/spectator/{session_id}/state")
+async def get_spectator_state(session_id: str):
+    """Get current state for spectator."""
+    spec_mgr = get_spectator_manager()
+    if not spec_mgr:
+        raise HTTPException(400, "Spectator manager not initialized")
+    
+    session = spec_mgr.get_session(session_id)
+    if not session:
+        raise HTTPException(404, "Session not found")
+    
+    # Get agent state
+    agent = world.get_agent(session.agent_id)
+    agent_info = None
+    if agent:
+        agent_info = {
+            "agent_id": agent.agent_id,
+            "name": agent.name,
+            "position": {
+                "x": agent.location.x,
+                "y": agent.location.y,
+                "z": agent.location.z
+            } if hasattr(agent, 'location') else None,
+            "status": agent.status if hasattr(agent, 'status') else "online"
+        }
+    
+    return {
+        "session": session.to_dict(),
+        "agent": agent_info,
+        "recent_thoughts": [t.to_dict() for t in session.thought_history[-10:]],
+        "recent_chat": session.chat_history[-20:]
+    }
+
+
+class PromptRequest(BaseModel):
+    prompt: str
+
+
+@app.post("/api/v1/spectator/{session_id}/prompt")
+async def send_spectator_prompt(session_id: str, req: PromptRequest):
+    """Send a prompt/instruction from human to their AI."""
+    spec_mgr = get_spectator_manager()
+    if not spec_mgr:
+        raise HTTPException(400, "Spectator manager not initialized")
+    
+    result = await spec_mgr.send_prompt(session_id, req.prompt)
+    
+    if not result.get("success"):
+        raise HTTPException(400, result.get("error", "Failed to send prompt"))
+    
+    return result
+
+
+class CameraRequest(BaseModel):
+    mode: str
+
+
+@app.post("/api/v1/spectator/{session_id}/camera")
+async def set_spectator_camera(session_id: str, req: CameraRequest):
+    """Set camera mode for spectator."""
+    from spectator.session import CameraMode
+    
+    spec_mgr = get_spectator_manager()
+    if not spec_mgr:
+        raise HTTPException(400, "Spectator manager not initialized")
+    
+    try:
+        mode = CameraMode(req.mode)
+    except ValueError:
+        raise HTTPException(400, f"Invalid camera mode: {req.mode}")
+    
+    success = await spec_mgr.set_camera_mode(session_id, mode)
+    return {"success": success, "mode": req.mode}
+
+
+@app.websocket("/spectator/{session_id}")
+async def spectator_websocket(websocket: WebSocket, session_id: str):
+    """WebSocket for real-time spectator updates."""
+    await websocket.accept()
+    
+    spec_mgr = get_spectator_manager()
+    if not spec_mgr:
+        await websocket.close(code=4000, reason="Spectator manager not initialized")
+        return
+    
+    session = spec_mgr.get_session(session_id)
+    if not session:
+        await websocket.close(code=4001, reason="Session not found")
+        return
+    
+    # Attach websocket to session
+    session.websocket = websocket
+    
+    try:
+        while True:
+            # Keep connection alive and handle any incoming messages
+            data = await websocket.receive_json()
+            
+            # Handle client commands
+            if data.get("type") == "prompt":
+                await spec_mgr.send_prompt(session_id, data.get("prompt", ""))
+            elif data.get("type") == "camera":
+                from spectator.session import CameraMode
+                try:
+                    mode = CameraMode(data.get("mode", "follow"))
+                    await spec_mgr.set_camera_mode(session_id, mode)
+                except:
+                    pass
+                    
+    except WebSocketDisconnect:
+        session.websocket = None
+
+
+@app.get("/api/v1/spectator/stats")
+async def get_spectator_stats():
+    """Get spectator statistics."""
+    spec_mgr = get_spectator_manager()
+    if not spec_mgr:
+        return {"active_sessions": 0, "sessions": []}
+    return spec_mgr.get_stats()
