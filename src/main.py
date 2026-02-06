@@ -20,6 +20,7 @@ from database import get_db_manager
 from world.objects import get_object_manager
 from world.inventory import get_inventory_manager, get_item_registry
 from world.weather import get_weather_engine
+from world.npcs import get_npc_manager
 
 
 # ========== APP SETUP ==========
@@ -644,3 +645,59 @@ async def get_world_time():
     """Get current world time."""
     weather = get_weather_engine()
     return weather.get_world_time()
+
+
+# ========== NPC ENDPOINTS ==========
+
+@app.get("/api/v1/npcs")
+async def list_npcs(region: Optional[str] = None):
+    """List all NPCs."""
+    npc_mgr = get_npc_manager()
+    if region:
+        npcs = [n.to_dict() for n in npc_mgr.get_npcs_in_region(region)]
+    else:
+        npcs = npc_mgr.get_all_npcs()
+    return {"npcs": npcs, "count": len(npcs)}
+
+
+@app.get("/api/v1/npcs/{npc_id}")
+async def get_npc(npc_id: str):
+    """Get NPC details."""
+    npc_mgr = get_npc_manager()
+    npc = npc_mgr.get_npc(npc_id)
+    if not npc:
+        raise HTTPException(404, "NPC not found")
+    
+    # Include dialogues for detail view
+    info = npc.to_dict()
+    info["dialogues"] = [d.trigger for d in npc.dialogues]
+    return info
+
+
+class TalkToNPCRequest(BaseModel):
+    message: str
+
+
+@app.post("/api/v1/agents/{agent_id}/talk/{npc_id}")
+async def talk_to_npc(agent_id: str, npc_id: str, req: TalkToNPCRequest):
+    """Have agent talk to an NPC."""
+    if agent_id not in mcp.connected_agents:
+        raise HTTPException(401, "Agent not connected")
+    
+    npc_mgr = get_npc_manager()
+    response = npc_mgr.talk_to_npc(npc_id, agent_id, req.message)
+    
+    if response is None:
+        raise HTTPException(404, "NPC not found or no response")
+    
+    return {
+        "npc_id": npc_id,
+        "response": response
+    }
+
+
+@app.get("/api/v1/npcs/stats")
+async def get_npc_stats():
+    """Get NPC statistics."""
+    npc_mgr = get_npc_manager()
+    return npc_mgr.get_stats()
