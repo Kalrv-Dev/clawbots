@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Persona",
+  "type": "object",
+  "required": [
+    "id",
+    "display_name",
+    "archetype",
+    "expression"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "archetype": {
+      "type": "object",
+      "required": [
+        "role",
+        "tone"
+      ],
+      "properties": {
+        "role": {
+          "type": "string"
+        },
+        "tone": {
+          "type": "string"
+        },
+        "social_position": {
+          "type": "string"
+        }
+      }
+    },
+    "expression": {
+      "type": "object",
+      "properties": {
+        "verbosity": {
+          "type": "string"
+        },
+        "humor": {
+          "type": "string"
+        },
+        "formality": {
+          "type": "string"
+        },
+        "emotional_range": {
+          "type": "string"
+        }
+      }
+    },
+    "preferred_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "avoids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "activation_conditions": {
+      "type": "object"
+    },
+    "deactivation_conditions": {
+      "type": "object"
+    },
+    "compatibility": {
+      "type": "object"
+    }
+  }
+}

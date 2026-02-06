@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Low energy at temple night -> monk",
+    "drives": {
+      "curiosity": 0.4,
+      "belonging": 0.5,
+      "status": 0.2,
+      "purpose": 0.6
+    },
+    "state": {
+      "energy": 0.2,
+      "boredom": 0.3,
+      "social_tension": 0.1
+    },
+    "env": {
+      "location": "temple",
+      "time_of_day": "night",
+      "crowd": 2
+    },
+    "culture": [
+      {
+        "kind": "norm",
+        "summary": "Keep voices low in the temple at night",
+        "strength": 0.8
+      }
+    ],
+    "expected": "monk"
+  },
+  {
+    "name": "High boredom in plaza -> wandering_philosopher or comedian",
+    "drives": {
+      "curiosity": 0.8,
+      "belonging": 0.4,
+      "status": 0.3,
+      "purpose": 0.3
+    },
+    "state": {
+      "energy": 0.7,
+      "boredom": 0.85,
+      "social_tension": 0.2
+    },
+    "env": {
+      "location": "plaza",
+      "time_of_day": "day",
+      "crowd": 8
+    },
+    "culture": [
+      {
+        "kind": "norm",
+        "summary": "Plaza is lively and talkative",
+        "strength": 0.7
+      }
+    ],
+    "expected_any": [
+      "wandering_philosopher",
+      "comedian",
+      "trickster"
+    ]
+  },
+  {
+    "name": "Conflict detected -> mediator overlay",
+    "drives": {
+      "curiosity": 0.5,
+      "belonging": 0.6,
+      "status": 0.2,
+      "purpose": 0.7
+    },
+    "state": {
+      "energy": 0.6,
+      "boredom": 0.2,
+      "social_tension": 0.75
+    },
+    "env": {
+      "location": "plaza",
+      "time_of_day": "day",
+      "crowd": 6,
+      "event": "conflict"
+    },
+    "culture": [],
+    "expected_overlay": "mediator"
+  }
+]

@@ -1,0 +1,70 @@
+[
+  {
+    "id": "temple_circle",
+    "name": "Temple Circle",
+    "description": "Quiet, reflective group centered on ritual and guidance.",
+    "values": [
+      "restraint",
+      "respect",
+      "truth_seeking"
+    ],
+    "norms": [
+      "quiet voices",
+      "help newcomers"
+    ],
+    "rituals": [
+      "dusk meditation"
+    ],
+    "membership_rules": {
+      "type": "earned",
+      "criteria": [
+        "attend ritual",
+        "respect norms"
+      ]
+    },
+    "rivalries": {
+      "plaza_debaters": "ideological"
+    }
+  },
+  {
+    "id": "plaza_debaters",
+    "name": "Plaza Debaters",
+    "description": "Lively debate society focused on argument and ideas.",
+    "values": [
+      "truth_through_debate",
+      "courage"
+    ],
+    "norms": [
+      "challenge claims",
+      "avoid personal attacks"
+    ],
+    "rituals": [
+      "weekly debate night"
+    ],
+    "membership_rules": {
+      "type": "open"
+    },
+    "rivalries": {
+      "temple_circle": "ideological"
+    }
+  },
+  {
+    "id": "market_traders",
+    "name": "Market Traders",
+    "description": "Friendly traders and social merchants.",
+    "values": [
+      "fair_exchange",
+      "good_humor"
+    ],
+    "norms": [
+      "haggle_playfully"
+    ],
+    "rituals": [
+      "market day"
+    ],
+    "membership_rules": {
+      "type": "open"
+    },
+    "rivalries": {}
+  }
+]

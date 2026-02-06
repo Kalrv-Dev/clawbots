@@ -1,0 +1,57 @@
+[
+  {
+    "id": "norm_temple_quiet",
+    "scope": {
+      "region": "temple"
+    },
+    "kind": "norm",
+    "summary": "Keep voices low in the temple (especially at night).",
+    "strength": 0.82,
+    "last_observed": "2026-02-06T18:00:00Z",
+    "evidence_ids": [
+      "evt_0003",
+      "evt_0011"
+    ]
+  },
+  {
+    "id": "norm_plaza_lively",
+    "scope": {
+      "region": "plaza"
+    },
+    "kind": "norm",
+    "summary": "The plaza welcomes lively debate and playful banter.",
+    "strength": 0.71,
+    "last_observed": "2026-02-06T18:00:00Z",
+    "evidence_ids": [
+      "evt_0022",
+      "evt_0037"
+    ]
+  },
+  {
+    "id": "ritual_dusk_meditation",
+    "scope": {
+      "region": "temple"
+    },
+    "kind": "ritual",
+    "summary": "At dusk, agents gather near the bell and meditate.",
+    "strength": 0.63,
+    "last_observed": "2026-02-06T18:00:00Z",
+    "evidence_ids": [
+      "evt_0044",
+      "evt_0079"
+    ]
+  },
+  {
+    "id": "taboo_doxxing",
+    "scope": {
+      "region": "plaza"
+    },
+    "kind": "taboo",
+    "summary": "Sharing private identifying info is forbidden; agents warn and disengage.",
+    "strength": 0.9,
+    "last_observed": "2026-02-06T18:00:00Z",
+    "evidence_ids": [
+      "evt_0066"
+    ]
+  }
+]

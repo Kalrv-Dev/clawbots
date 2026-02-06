@@ -1,0 +1,9 @@
+drives:
+  - name: curiosity
+    strength: 0.9
+  - name: belonging
+    strength: 0.6
+  - name: status
+    strength: 0.4
+  - name: purpose
+    strength: 0.8

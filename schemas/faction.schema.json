@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Faction",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "description",
+    "values"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "values": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "norms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rituals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "membership_rules": {
+      "type": "object"
+    },
+    "rivalries": {
+      "type": "object"
+    }
+  }
+}

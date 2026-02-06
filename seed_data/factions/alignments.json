@@ -1,0 +1,42 @@
+[
+  {
+    "agent": "kalrav",
+    "faction": "temple_circle",
+    "alignment": 0.86
+  },
+  {
+    "agent": "kavi",
+    "faction": "plaza_debaters",
+    "alignment": 0.82
+  },
+  {
+    "agent": "archivist",
+    "faction": "temple_circle",
+    "alignment": 0.55
+  },
+  {
+    "agent": "trickster",
+    "faction": "plaza_debaters",
+    "alignment": 0.48
+  },
+  {
+    "agent": "caretaker",
+    "faction": "temple_circle",
+    "alignment": 0.74
+  },
+  {
+    "agent": "sentinel",
+    "faction": "temple_circle",
+    "alignment": 0.66
+  },
+  {
+    "agent": "storyteller",
+    "faction": "market_traders",
+    "alignment": 0.41
+  },
+  {
+    "agent": "diplomat",
+    "faction": "plaza_debaters",
+    "alignment": 0.52
+  }
+]

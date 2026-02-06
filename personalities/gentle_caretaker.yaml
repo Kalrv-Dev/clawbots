@@ -1,0 +1,9 @@
+traits:
+  openness: 0.6
+  agreeableness: 0.9
+  assertiveness: 0.4
+  patience: 0.9
+  playfulness: 0.3
+communication_style:
+  directness: low
+  metaphor_use: medium

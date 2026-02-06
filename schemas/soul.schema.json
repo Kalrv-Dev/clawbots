@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Soul",
+  "type": "object",
+  "required": [
+    "name",
+    "identity",
+    "personality",
+    "drives",
+    "default_persona",
+    "allowed_personas",
+    "values"
+  ],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "identity": {
+      "type": "string"
+    },
+    "personality": {
+      "type": "string"
+    },
+    "drives": {
+      "type": "string"
+    },
+    "default_persona": {
+      "type": "string"
+    },
+    "allowed_personas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "values": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "relationships": {
+      "type": "object"
+    }
+  }
+}
