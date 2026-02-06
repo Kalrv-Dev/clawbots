@@ -19,6 +19,7 @@ from portal import get_portal
 from database import get_db_manager
 from world.objects import get_object_manager
 from world.inventory import get_inventory_manager, get_item_registry
+from world.weather import get_weather_engine
 
 
 # ========== APP SETUP ==========
@@ -608,3 +609,38 @@ async def use_item(agent_id: str, item_id: str):
         raise HTTPException(400, result.get("error"))
     
     return result
+
+
+# ========== WEATHER ENDPOINTS ==========
+
+@app.get("/api/v1/weather")
+async def get_all_weather():
+    """Get weather for all regions."""
+    weather = get_weather_engine()
+    return {
+        "time": weather.get_world_time(),
+        "regions": weather.get_all_weather()
+    }
+
+
+@app.get("/api/v1/weather/{region}")
+async def get_region_weather(region: str):
+    """Get weather for specific region."""
+    weather = get_weather_engine()
+    state = weather.get_weather(region)
+    
+    if not state:
+        raise HTTPException(404, f"Region not found: {region}")
+    
+    return {
+        "region": region,
+        "time": weather.get_world_time(),
+        "weather": state.to_dict()
+    }
+
+
+@app.get("/api/v1/time")
+async def get_world_time():
+    """Get current world time."""
+    weather = get_weather_engine()
+    return weather.get_world_time()
