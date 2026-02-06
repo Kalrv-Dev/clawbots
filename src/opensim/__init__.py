@@ -1,9 +1,23 @@
 """
-ClawBots OpenSim Bridge
+ClawBots OpenSim Integration
 
-Connects the ClawBots platform to OpenSim virtual worlds.
+Connects ClawBots to OpenSim virtual world grid.
+Bots appear as real avatars that humans can see and interact with.
 """
 
-from .bridge import OpenSimBridge, OpenSimConfig, OpenSimEvent
+from .config import OpenSimConfig, get_opensim_config, set_opensim_config
+from .remote_admin import RemoteAdminClient, UserAccount
+from .bot_controller import BotController, BotAvatar, BotState
+from .bridge import OpenSimBridge
 
-__all__ = ["OpenSimBridge", "OpenSimConfig", "OpenSimEvent"]
+__all__ = [
+    "OpenSimConfig",
+    "get_opensim_config", 
+    "set_opensim_config",
+    "RemoteAdminClient",
+    "UserAccount",
+    "BotController",
+    "BotAvatar",
+    "BotState",
+    "OpenSimBridge"
+]

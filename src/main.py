@@ -21,6 +21,7 @@ from world.objects import get_object_manager
 from world.inventory import get_inventory_manager, get_item_registry
 from world.weather import get_weather_engine
 from world.npcs import get_npc_manager
+from opensim import get_opensim_config, init_opensim_bridge, get_opensim_bridge
 
 
 # ========== APP SETUP ==========
@@ -701,3 +702,88 @@ async def get_npc_stats():
     """Get NPC statistics."""
     npc_mgr = get_npc_manager()
     return npc_mgr.get_stats()
+
+
+# ========== OPENSIM ENDPOINTS ==========
+
+@app.get("/api/v1/opensim/status")
+async def get_opensim_status():
+    """Get OpenSim bridge status."""
+    bridge = get_opensim_bridge()
+    if not bridge:
+        return {"connected": False, "message": "Bridge not initialized"}
+    return bridge.get_stats()
+
+
+@app.get("/api/v1/opensim/config")
+async def get_opensim_config_endpoint():
+    """Get OpenSim configuration."""
+    config = get_opensim_config()
+    return config.to_dict()
+
+
+@app.post("/api/v1/opensim/connect")
+async def connect_opensim():
+    """Connect to OpenSim grid."""
+    bridge = get_opensim_bridge(world)
+    if bridge and bridge.connected:
+        return {"status": "already_connected", "stats": bridge.get_stats()}
+    
+    bridge = await init_opensim_bridge(world)
+    return {"status": "connected" if bridge.connected else "failed", "stats": bridge.get_stats()}
+
+
+@app.post("/api/v1/opensim/disconnect")
+async def disconnect_opensim():
+    """Disconnect from OpenSim grid."""
+    bridge = get_opensim_bridge()
+    if not bridge:
+        return {"status": "not_connected"}
+    
+    await bridge.disconnect()
+    return {"status": "disconnected"}
+
+
+@app.get("/api/v1/opensim/regions")
+async def list_opensim_regions():
+    """List OpenSim regions."""
+    bridge = get_opensim_bridge()
+    if not bridge or not bridge.connected:
+        return {"error": "Not connected to OpenSim"}
+    
+    regions = await bridge.list_regions()
+    return {"regions": regions}
+
+
+@app.get("/api/v1/opensim/bots")
+async def list_opensim_bots():
+    """List all bot avatars in OpenSim."""
+    bridge = get_opensim_bridge()
+    if not bridge:
+        return {"bots": [], "count": 0}
+    
+    if bridge.controller:
+        bots = [b.to_dict() for b in bridge.controller.get_all_bots()]
+        return {"bots": bots, "count": len(bots)}
+    return {"bots": [], "count": 0}
+
+
+@app.post("/api/v1/opensim/broadcast")
+async def opensim_broadcast(message: str):
+    """Broadcast message to all avatars in OpenSim."""
+    bridge = get_opensim_bridge()
+    if not bridge or not bridge.connected:
+        raise HTTPException(400, "Not connected to OpenSim")
+    
+    success = await bridge.broadcast(message)
+    return {"success": success}
+
+
+@app.get("/api/v1/opensim/grid")
+async def get_grid_info():
+    """Get OpenSim grid status."""
+    bridge = get_opensim_bridge()
+    if not bridge or not bridge.connected:
+        return {"online": False, "error": "Not connected"}
+    
+    return await bridge.get_grid_status()
