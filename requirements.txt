@@ -1,23 +1,42 @@
-# ClawBots Platform Dependencies
+# ClawBots Dependencies
+# =====================
 
-# Web Framework
+# Core Framework
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
-websockets>=12.0
+pydantic>=2.0.0
 
-# Data Validation
-pydantic>=2.5.0
+# Async HTTP
+aiohttp>=3.9.0
+httpx>=0.26.0
 
-# Async
-asyncio-throttle>=1.0.2
+# Database
+asyncpg>=0.29.0          # PostgreSQL async driver
+redis>=5.0.0             # Redis async client
 
-# Database (optional, for production)
-# sqlalchemy>=2.0.0
-# asyncpg>=0.29.0
-# redis>=5.0.0
+# Data & Serialization
+pyyaml>=6.0
+python-multipart>=0.0.6
 
-# OpenSim Bridge (optional)
-# opensimpy>=0.1.0
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Monitoring & Metrics
+prometheus-client>=0.19.0
+
+# Logging
+python-json-logger>=2.0.0
 
 # Development
-python-dotenv>=1.0.0
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+black>=23.0.0
+ruff>=0.1.0
+
+# Optional: OpenSim XML-RPC
+# xmlrpc-client is built-in
+
+# Optional: Machine Learning
+# numpy>=1.24.0
+# scipy>=1.11.0
