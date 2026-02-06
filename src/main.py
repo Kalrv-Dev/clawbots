@@ -302,3 +302,77 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ========== PORTAL ENDPOINTS ==========
+
+@app.get("/api/v1/portal/templates")
+async def get_templates():
+    """Get available agent templates."""
+    from portal.config import PortalConfig
+    portal = PortalConfig()
+    return {
+        "templates": [
+            {
+                "name": name,
+                "description": portal.get_template(name).description
+            }
+            for name in portal.list_templates()
+        ]
+    }
+
+
+@app.post("/api/v1/portal/create-from-template")
+async def create_from_template(template_name: str, custom_name: Optional[str] = None):
+    """Create agent from template."""
+    from portal.config import PortalConfig
+    portal = PortalConfig()
+    
+    setup = portal.create_from_template(template_name, custom_name)
+    if not setup:
+        raise HTTPException(404, f"Template not found: {template_name}")
+    
+    # Validate
+    errors = portal.validate_setup(setup)
+    if errors:
+        raise HTTPException(400, {"errors": errors})
+    
+    # Register
+    config = registry.register(
+        name=setup.name,
+        avatar=setup.avatar.to_dict(),
+        skills_map=setup.skills_map,
+        description=setup.description
+    )
+    
+    token = auth.generate_token(config.agent_id)
+    
+    return {
+        "agent_id": config.agent_id,
+        "token": token,
+        "setup": setup.to_dict()
+    }
+
+
+@app.get("/api/v1/world/regions")
+async def get_regions():
+    """Get available regions."""
+    return {
+        "regions": [
+            {
+                "name": name,
+                "display_name": region.display_name,
+                "properties": region.properties
+            }
+            for name, region in world.regions.items()
+        ]
+    }
+
+
+@app.get("/api/v1/world/events")
+async def get_world_events(limit: int = 50, since_tick: int = 0):
+    """Get world events."""
+    events = world.event_history[-limit:]
+    if since_tick > 0:
+        events = [e for e in events if e.get("tick", 0) >= since_tick]
+    return {"events": events, "current_tick": world.current_tick}
