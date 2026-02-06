@@ -127,3 +127,73 @@ async def run_all_tests():
 
 if __name__ == "__main__":
     asyncio.run(run_all_tests())
+
+
+async def test_portal_templates():
+    """Test portal templates endpoint."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{BASE_URL}/api/v1/portal/templates") as resp:
+            assert resp.status == 200
+            data = await resp.json()
+            assert "templates" in data
+            assert len(data["templates"]) >= 3  # explorer, merchant, scholar
+    print(f"✅ Portal templates: {len(data['templates'])} available")
+
+
+async def test_world_regions():
+    """Test world regions endpoint."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{BASE_URL}/api/v1/world/regions") as resp:
+            assert resp.status == 200
+            data = await resp.json()
+            assert "regions" in data
+            region_names = [r["name"] for r in data["regions"]]
+            assert "main" in region_names
+    print(f"✅ Regions: {[r['name'] for r in data['regions']]}")
+
+
+async def test_create_from_template():
+    """Test creating agent from template."""
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{BASE_URL}/api/v1/portal/create-from-template",
+            params={"template_name": "explorer", "custom_name": "MyExplorer"}
+        ) as resp:
+            assert resp.status == 200
+            data = await resp.json()
+            assert "agent_id" in data
+            assert "token" in data
+            assert data["setup"]["name"] == "MyExplorer"
+    print(f"✅ Created from template: {data['agent_id']}")
+
+
+# Add to run_all_tests
+async def run_all_tests_v2():
+    """Run all tests including new ones."""
+    print("\n🧪 ClawBots API Tests v2\n")
+    print("=" * 40)
+    
+    try:
+        await test_health()
+        await test_root()
+        await test_list_agents()
+        await test_mcp_tools()
+        await test_portal_templates()
+        await test_world_regions()
+        await test_create_from_template()
+        await test_register_and_connect()
+        
+        print("=" * 40)
+        print("\n✅ All tests passed!\n")
+        return True
+        
+    except AssertionError as e:
+        print(f"\n❌ Test failed: {e}\n")
+        return False
+    except Exception as e:
+        print(f"\n❌ Error: {e}\n")
+        return False
+
+
+if __name__ == "__main__":
+    asyncio.run(run_all_tests_v2())
