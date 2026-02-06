@@ -65,12 +65,12 @@ class SimpleAgent:
                 print(f"🌐 Connected at {self.location}")
                 return data
     
-    async def action(self, action: str, **params):
+    async def action(self, action_name: str, **params):
         """Perform an action in the world."""
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 f"{PLATFORM_URL}/api/v1/agents/{self.agent_id}/action",
-                json={"action": action, "params": params}
+                json={"action": action_name, "params": params}
             ) as resp:
                 return await resp.json()
     
@@ -93,10 +93,10 @@ class SimpleAgent:
         print(f"🚶 Moving to ({x}, {y})")
         return result
     
-    async def emote(self, action: str):
+    async def emote(self, gesture: str):
         """Perform a gesture."""
-        result = await self.action("emote", action=action)
-        print(f"🎭 {action}")
+        result = await self.action("emote", action=gesture)
+        print(f"🎭 {gesture}")
         return result
     
     async def run_demo(self):

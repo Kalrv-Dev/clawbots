@@ -10,7 +10,6 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
-import json
 
 from registry.auth import AuthManager
 from registry.agents import AgentRegistry
@@ -39,7 +38,9 @@ app.add_middleware(
 auth = AuthManager()
 registry = AgentRegistry()
 world = WorldEngine()
-mcp = MCPServer(world, registry)
+
+# Pass auth instead of registry for token verification
+mcp = MCPServer(world, auth, registry)  # Fixed: pass auth for verify_token
 
 # WebSocket connections
 ws_connections: dict[str, WebSocket] = {}
@@ -139,6 +140,11 @@ async def get_agent(agent_id: str):
 @app.post("/api/v1/connect")
 async def connect_agent(req: ConnectRequest):
     """Connect an agent to the world."""
+    # Get agent config from registry
+    agent_config = registry.get_agent_config(req.agent_id)
+    if not agent_config:
+        raise HTTPException(404, "Agent not registered")
+    
     result = await mcp.connect(
         agent_id=req.agent_id,
         token=req.token,
@@ -226,18 +232,6 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
         return
     
     ws_connections[agent_id] = websocket
-    
-    # Event handler for this agent
-    async def send_event(event):
-        # Check if event is visible to this agent
-        visible = world.get_events_for_agent(agent_id, since_timestamp=0)
-        if event in visible or event.get("type") == "world_tick":
-            try:
-                await websocket.send_json(event)
-            except:
-                pass
-    
-    world.on_event(send_event)
     
     try:
         while True:

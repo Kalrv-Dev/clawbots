@@ -57,8 +57,9 @@ class MCPServer:
     - Actions: Interact with objects/agents
     """
     
-    def __init__(self, world_engine, registry):
+    def __init__(self, world_engine, auth, registry):
         self.world = world_engine
+        self.auth = auth
         self.registry = registry
         self.connected_agents: Dict[str, "AgentSession"] = {}
         
@@ -166,7 +167,7 @@ class MCPServer:
         z: float = 25.0
     ) -> bool:
         """Teleport to another region. Requires permission."""
-        if not self.registry.can_access_region(agent_id, region):
+        if not self.auth.can_access_region(agent_id, region):
             return False
         return await self.world.teleport_agent(agent_id, region, x, y, z)
     
@@ -247,7 +248,7 @@ class MCPServer:
         Returns spawn location and initial state.
         """
         # Verify token
-        if not self.registry.verify_token(agent_id, token):
+        if not self.auth.verify_token(agent_id, token):
             return {"error": "Invalid token"}
         
         # Get agent config
