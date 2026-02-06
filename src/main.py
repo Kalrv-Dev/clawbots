@@ -18,6 +18,7 @@ from gateway.mcp_server import MCPServer
 from portal import get_portal
 from database import get_db_manager
 from world.objects import get_object_manager
+from world.inventory import get_inventory_manager, get_item_registry
 
 
 # ========== APP SETUP ==========
@@ -507,3 +508,103 @@ async def get_object_stats():
     """Get object statistics."""
     obj_mgr = get_object_manager()
     return obj_mgr.get_stats()
+
+
+# ========== INVENTORY ENDPOINTS ==========
+
+@app.get("/api/v1/items")
+async def list_item_types(item_type: Optional[str] = None, rarity: Optional[str] = None):
+    """List all item definitions."""
+    registry = get_item_registry()
+    items = registry.get_all()
+    
+    # Filter
+    if item_type:
+        items = [i for i in items if i.item_type.value == item_type]
+    if rarity:
+        items = [i for i in items if i.rarity.value == rarity]
+    
+    return {
+        "items": [
+            {
+                "item_type_id": i.item_type_id,
+                "name": i.name,
+                "type": i.item_type.value,
+                "rarity": i.rarity.value,
+                "description": i.description,
+                "base_value": i.base_value,
+                "tradeable": i.tradeable,
+                "consumable": i.consumable
+            }
+            for i in items
+        ]
+    }
+
+
+@app.get("/api/v1/agents/{agent_id}/inventory")
+async def get_agent_inventory(agent_id: str):
+    """Get agent's inventory."""
+    inv_mgr = get_inventory_manager()
+    return inv_mgr.get_inventory_summary(agent_id)
+
+
+class GiveItemRequest(BaseModel):
+    item_type_id: str
+    quantity: int = 1
+
+
+@app.post("/api/v1/agents/{agent_id}/inventory/give")
+async def give_item_to_agent(agent_id: str, req: GiveItemRequest):
+    """Give item to agent (admin/system)."""
+    inv_mgr = get_inventory_manager()
+    item = inv_mgr.give_item(agent_id, req.item_type_id, req.quantity, "admin")
+    
+    if not item:
+        raise HTTPException(400, "Invalid item type")
+    
+    return {
+        "success": True,
+        "item": item.to_dict()
+    }
+
+
+class TransferItemRequest(BaseModel):
+    to_agent_id: str
+    item_id: str
+    quantity: int = 1
+
+
+@app.post("/api/v1/agents/{agent_id}/inventory/transfer")
+async def transfer_item(agent_id: str, req: TransferItemRequest):
+    """Transfer item between agents."""
+    # Verify sender is connected
+    if agent_id not in mcp.connected_agents:
+        raise HTTPException(401, "Agent not connected")
+    
+    inv_mgr = get_inventory_manager()
+    success, message = inv_mgr.transfer_item(
+        from_agent=agent_id,
+        to_agent=req.to_agent_id,
+        item_id=req.item_id,
+        quantity=req.quantity
+    )
+    
+    if not success:
+        raise HTTPException(400, message)
+    
+    return {"success": True, "message": message}
+
+
+@app.post("/api/v1/agents/{agent_id}/inventory/use/{item_id}")
+async def use_item(agent_id: str, item_id: str):
+    """Use a consumable item."""
+    if agent_id not in mcp.connected_agents:
+        raise HTTPException(401, "Agent not connected")
+    
+    inv_mgr = get_inventory_manager()
+    result = inv_mgr.use_item(agent_id, item_id)
+    
+    if not result.get("success"):
+        raise HTTPException(400, result.get("error"))
+    
+    return result
