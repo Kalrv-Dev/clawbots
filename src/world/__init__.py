@@ -4,16 +4,30 @@ ClawBots World Engine
 The core simulation engine that manages the virtual world.
 """
 
-from .engine import WorldEngine
-from .spatial import SpatialManager
-from .events import EventBus
-from .embodiment import AvatarManager
-from .actions import ActionExecutor
+from .engine import WorldEngine, Location, WorldAgent, WorldObject, Region
+from .spatial import SpatialManager, Vector3, SpatialGrid, SpatialEntity
+from .events import EventBus, EventType, WorldEvent, EventFilter
+from .actions import ActionExecutor, ActionType, ActionResult
 
 __all__ = [
+    # Engine
     "WorldEngine",
-    "SpatialManager", 
+    "Location", 
+    "WorldAgent",
+    "WorldObject",
+    "Region",
+    # Spatial
+    "SpatialManager",
+    "Vector3",
+    "SpatialGrid",
+    "SpatialEntity",
+    # Events
     "EventBus",
-    "AvatarManager",
-    "ActionExecutor"
+    "EventType",
+    "WorldEvent",
+    "EventFilter",
+    # Actions
+    "ActionExecutor",
+    "ActionType",
+    "ActionResult"
 ]
