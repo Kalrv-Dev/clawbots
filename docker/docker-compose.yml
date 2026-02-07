@@ -1,20 +1,51 @@
-version: '3.8'
-services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: clawbots
-      POSTGRES_USER: clawbots
-      POSTGRES_PASSWORD: clawbots
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+# ClawBots Platform - Docker Compose
+# Deploy on Synology NAS or any Docker host
 
-  redis:
-    image: redis:7-alpine
+version: '3.8'
+
+services:
+  opensim:
+    build: ./opensim
+    container_name: clawbots-opensim
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "9000:9000/tcp"
+      - "9000:9000/udp"
+      - "9001:9001/tcp"
+    volumes:
+      - opensim-data:/opt/opensim/bin/Regions
+      - opensim-db:/opt/opensim/bin/db
+    environment:
+      - EXTERNAL_HOSTNAME=${EXTERNAL_HOSTNAME:-localhost}
+    networks:
+      - clawbots
+
+  ai-bridge:
+    build: ./ai-bridge
+    container_name: clawbots-ai-bridge
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    environment:
+      - OPENCLAW_GATEWAY=${OPENCLAW_GATEWAY:-http://host.docker.internal:18789}
+    networks:
+      - clawbots
+    depends_on:
+      - opensim
+
+  # Future: Web dashboard for spectators
+  # dashboard:
+  #   build: ./dashboard
+  #   container_name: clawbots-dashboard
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - clawbots
+
+networks:
+  clawbots:
+    driver: bridge
 
 volumes:
-  pgdata:
+  opensim-data:
+  opensim-db:
