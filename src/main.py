@@ -26,6 +26,7 @@ from world.weather import get_weather_engine
 from world.npcs import get_npc_manager
 from opensim import get_opensim_config, init_opensim_bridge, get_opensim_bridge
 from spectator import get_spectator_manager, init_spectator_manager
+from worlds import worlds_router
 
 
 # ========== APP SETUP ==========
@@ -48,6 +49,9 @@ app.add_middleware(
 WEB_DIR = Path(__file__).parent.parent / "web"
 if WEB_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
+
+# World spawner routes
+app.include_router(worlds_router, prefix="/api/v1")
 
 # ========== PLATFORM COMPONENTS ==========
 
